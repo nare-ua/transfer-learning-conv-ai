@@ -83,9 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const tokenizePersona = () => {
         const text = App.persona.text;
+        console.log("text=", text);
         const tokens = text.split(/\b/).filter(x => !/\s/.test(x));
         let html = ``;
         for (let [i, tok] of tokens.entries()) {
+            console.log("tok=", tok);
             if (i === 0) {
                 html += `<span data-idx="${i}">${Utils.capitalize(tok)}</span>`;
             }
@@ -108,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         evt.preventDefault();
         App.persona = await Api.shared.getShuffle();
         tokenizePersona();
-        history.replaceState(null, "", `/persona/${App.persona.slug}`);
+        //history.replaceState(null, "", `/persona/${App.persona.slug}`);
         /// Also reset messages and reload suggestion.
         App.messages = [];
         App.messagesRoot.innerHTML = "";

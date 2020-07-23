@@ -23,6 +23,9 @@ from flask import (
   request,
   send_from_directory,
 )
+def get_slug(personality):
+  slug = "-".join([x for x in personality.replace(' ', '.').replace("'",".").replace(",",".").split(".") if len(x) > 0])
+  return slug
 # set the project root directory as the static folder, you can set others.
 app = Flask(__name__, static_url_path='', static_folder='')
 
@@ -64,12 +67,14 @@ logger.info("Sample a personality")
 dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
 personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
 
-def select_personalities():
-  personality = random.choice(personalities)
-  #logger.info("Selected personality: %s", tokenizer.decode(chain(*personality_list)))
-  return personality
+#SLUG_MAPA = {get_slug(p): p for p in personalities}
 
-personality = select_personalities()
+def select_personalities():
+  return random.choice(personalities)
+  #logger.info("Selected personality: %s", tokenizer.decode(chain(*personality_list)))
+  #return personality
+
+#personality = select_personalities()
 #personality = tokenizer.decode(chain(*personality_list))
 #personality_list = [tokenizer.decode(p) for p in personality_list]
 #for p in personality_list:
@@ -88,16 +93,36 @@ d = {"text": "hello! i'm tom and jerry.", "attention": [[["my", 0.0], ["dad", 0.
 @app.route('/messages/toto',  methods=['POST'])
 def toto():
   req = request.get_json()
-  personality = tokenizer.encode([x for x in req['persona'].split('.')])
+  text = request.args.get('text')
+  print("text=", text)
   print("req=", req)
+  print("persona=", req['persona'].split('.'))
+  personality = [tokenizer.encode(x) for x in req['persona'].split('.')]
   print("personality=", personality)
-  history = []
+  history = [tokenizer.encode(o['content']) for o in req['context']]
+  if text is not None:
+    history.append(tokenizer.encode(text))
+  print(len(history), history)
   with torch.no_grad():
     out_ids = sample_sequence(personality, history, tokenizer, model, args)
   out_text = tokenizer.decode(out_ids, skip_special_tokens=True)
   # TODO: attention?
   return jsonify({"text": out_text})
   #return jsonify(d)
+
+#@app.route('/persona/<slug>'):
+#def persona(slug):
+#  SLUG_MAPA[slug]
+#  return render_template('index.html', personality_list=[])
+
+@app.route('/shuffle')
+def shuffle():
+  personality_list = select_personalities()
+  personality = "".join([tokenizer.decode(p) for p in personality_list])
+  slug = "-".join([x for x in personality.replace(' ', '.').replace("'",".").replace(",",".").split(".") if len(x) > 0])
+  print(personality)
+  print(slug)
+  return jsonify({"slug": slug, 'text': personality})
 
 @app.route('/')
 def index():
