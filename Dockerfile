@@ -28,7 +28,7 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
 # model zoo
-RUN mkdir models && \
+RUN mkdir -p models && \
     curl https://s3.amazonaws.com/models.huggingface.co/transfer-learning-chatbot/finetuned_chatbot_gpt.tar.gz > models/finetuned_chatbot_gpt.tar.gz && \
     cd models/ && \
     tar -xvzf finetuned_chatbot_gpt.tar.gz && \

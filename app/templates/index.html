@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Hugging Face – ConvAI</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="/dist/style.css">
+	<link href="https://fonts.googleapis.com/css?family=IBM+Plex+Mono|IBM+Plex+Sans:400,700" rel="stylesheet">
+</head>
+<body>
+        <!--
+	<div class="header">
+		<div class="header-container">
+			<div class="title">
+				🦄 How to build a State-of-the-Art Conversational AI with Transfer Learning
+			</div>
+			<div class="links">
+				<a target="_blank" href="https://medium.com/huggingface/how-to-build-a-state-of-the-art-conversational-ai-with-transfer-learning-2d818ac26313"><img src="/assets/iconmonstr-medium-1.svg"></a>
+				<a target="_blank" href="https://github.com/huggingface/transfer-learning-conv-ai"><img src="/assets/iconmonstr-github-1.svg"></a>
+			</div>
+		</div>
+	</div>
+        -->
+	
+	<div class="subheader">
+		<div class="container">
+			<div class="box box0">
+				<div class="clearfix">
+					<div class="title">Random personality</div>
+					<div class="links">
+						<a href="#" class="js-shuffle">Shuffle <img src="/assets/iconmonstr-media-control-55.svg"></a>
+            <!-- <a href="#" class="js-share"  >Share <img src="/assets/iconmonstr-share-11.svg"></a> -->
+					</div>
+				</div>
+				<div class="persona"></div>
+			</div>
+			<div class="box box1">
+				<div class="clearfix">
+					<div class="title">Start chatting</div>
+				</div>
+				<div class="description">
+					The machine learning model created a consistent persona based on
+					these few lines of bio. You can now chat with this persona below.
+				</div>
+				<div class="gauge">
+					<div class="gauge-el-wrapper"><div class="gauge-el"><span class="legend">Decoder settings: Low</span></div></div>
+					<div class="gauge-el-wrapper"><div class="gauge-el"><span class="legend">Medium</span></div></div>
+					<div class="gauge-el-wrapper"><div class="gauge-el"><span class="legend">High</span></div></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="container">
+		<div class="chat-container">
+			<div class="messages-gradient"></div>
+			<div class="placeholder-start">
+				<div class="inner">
+					Start chatting with this model, or tweak the decoder settings in the bottom-left corner.
+				</div>
+			</div>
+			<div class="messages"></div>
+		</div>
+		<div class="chat-input">
+			<div class="input-wrapper">
+				<form class="js-form">
+					<div class="input-message-wrapper">
+						<input class="input-message" type="text" name="q" placeholder="Type a message..." autocomplete="off" autofocus>
+					</div>
+					<button class="input-button">Send</button>
+				</form>
+			</div>
+		</div>
+		<div class="chat-suggestion">
+			Suggestion: <span class="js-loading">Loading…</span> <a class="js-suggestion hide" href="#">Why are you so stressed out?</a>
+		</div>
+	</div>
+	
+	
+	<div class="decoder-settings">
+		<div class="title">
+			Decoder settings
+      <!--<a target="_blank" href="https://medium.com/huggingface/how-to-build-a-state-of-the-art-conversational-ai-with-transfer-learning-2d818ac26313#79c5">--><img src="/assets/Icon-info.svg"></a>
+		</div>
+		<div class="setting">
+			<div class="desc">
+				<span>Top-k</span><span class="js-val"></span>
+			</div>
+			<input class="slider" type="range" min="0" max="200" step="1" value="0">
+		</div>
+		<div class="setting">
+			<div class="desc">
+				<span>Top-p</span><span class="js-val"></span>
+			</div>
+			<input class="slider js-inverted" type="range" min="0" max="1" step="any" value="0.9">
+		</div>
+		<div class="setting">
+			<div class="desc">
+				<span>Temperature</span><span class="js-val"></span>
+			</div>
+			<input class="slider" type="range" min="0" max="2" step="any" value="0.6">
+		</div>
+	</div>
+	
+	<script>window.PERSONA_ATLOAD = {"slug":"i-grew-up-homeschooled-i-ve-a-hard-time-feeling-connected-with-people-i-take-my-emotions-out-through-art-i-care-deeply-about-animals-i-sometimes-need-to-scream-to-feel-alive","text":"i grew up homeschooled.i've a hard time feeling connected with people.i take my emotions out through art.i care deeply about animals.i sometimes need to scream to feel alive."};</script>
+	<script src="/dist/script.js"></script>
+</body>
+</html>

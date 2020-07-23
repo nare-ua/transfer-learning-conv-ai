@@ -19,19 +19,22 @@ HF_FINETUNED_MODEL = "https://s3.amazonaws.com/models.huggingface.co/transfer-le
 logger = logging.getLogger(__file__)
 
 def download_pretrained_model():
-    """ Download and extract finetuned model from S3 """
-    resolved_archive_file = cached_path(HF_FINETUNED_MODEL)
-    tempdir = tempfile.mkdtemp()
-    logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, tempdir))
-    with tarfile.open(resolved_archive_file, 'r:gz') as archive:
-        archive.extractall(tempdir)
-    return tempdir
+  """ Download and extract finetuned model from S3 """
+  resolved_archive_file = cached_path(HF_FINETUNED_MODEL)
+  tempdir = tempfile.mkdtemp()
+  logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, tempdir))
+  with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+    archive.extractall(tempdir)
+  return tempdir
 
 
 def get_dataset(tokenizer, dataset_path, dataset_cache):
     """ Get tokenized PERSONACHAT dataset from S3 or cache."""
     dataset_path = dataset_path or PERSONACHAT_URL
     dataset_cache = dataset_cache + '_' + type(tokenizer).__name__  # To avoid using GPT cache for GPT-2 and vice-versa
+    logger.info("dataset_path: %s", dataset_path)
+    logger.info("dataset_cache: %s", dataset_cache)
+
     if dataset_cache and os.path.isfile(dataset_cache):
         logger.info("Load tokenized dataset from cache at %s", dataset_cache)
         dataset = torch.load(dataset_cache)
@@ -54,15 +57,14 @@ def get_dataset(tokenizer, dataset_path, dataset_cache):
 
 
 class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
+  def __init__(self, *args, **kwargs):
+    super(AttrDict, self).__init__(*args, **kwargs)
+    self.__dict__ = self
 
 def make_logdir(model_name: str):
-    """Create unique path to save results and checkpoints, e.g. runs/Sep22_19-45-59_gpu-7_gpt2"""
-    # Code copied from ignite repo
-    current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-    logdir = os.path.join(
-        'runs', current_time + '_' + socket.gethostname() + '_' + model_name)
-    return logdir
+  """Create unique path to save results and checkpoints, e.g. runs/Sep22_19-45-59_gpu-7_gpt2"""
+  # Code copied from ignite repo
+  current_time = datetime.now().strftime('%b%d_%H-%M-%S')
+  logdir = os.path.join(
+      'runs', current_time + '_' + socket.gethostname() + '_' + model_name)
+  return logdir

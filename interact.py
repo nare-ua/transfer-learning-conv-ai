@@ -114,12 +114,12 @@ def run():
             raise ValueError("Interacting with GPT2 requires passing a finetuned model_checkpoint")
         else:
             args.model_checkpoint = download_pretrained_model()
-	
-	
+
+
     if args.seed != 0:
-    	random.seed(args.seed)
-    	torch.random.manual_seed(args.seed)
-    	torch.cuda.manual_seed(args.seed)
+      random.seed(args.seed)
+      torch.random.manual_seed(args.seed)
+      torch.cuda.manual_seed(args.seed)
 
 
     logger.info("Get pretrained model and tokenizer")
