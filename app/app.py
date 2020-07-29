@@ -16,6 +16,8 @@ from train import SPECIAL_TOKENS, build_input_from_segments, add_special_tokens_
 from utils import get_dataset, download_pretrained_model
 from interact import sample_sequence
 
+from flask_cors import CORS
+
 from flask import (
   Flask,
   jsonify,
@@ -28,6 +30,7 @@ def get_slug(personality):
   return slug
 # set the project root directory as the static folder, you can set others.
 app = Flask(__name__, static_url_path='', static_folder='')
+CORS(app)
 
 parser = ArgumentParser()
 parser.add_argument("--dataset_path", type=str, default="", help="Path or url of the dataset. If empty download from S3.")
@@ -84,12 +87,27 @@ def select_personalities():
 def send_js(path):
   return send_from_directory('dist', path)
 
-d = {"text": "hello! i'm tom and jerry.", "attention": [[["my", 0.0], ["dad", 0.0], ["is", 0.0], ["a", 0.0], ["veteran", 0.0], [".", 0.0], ["i", 0.0], ["like", 0.0], ["to", 0.0], ["play", 0.0], ["tennis", 3.9855380058288574], [".", 0.0], ["my", 0.0], ["favorite", 0.0], ["color", 0.0], ["is", 0.0], ["green", 0.0], [".", 0.0], ["i", 0.0], ["listen", 1.2798850536346436], ["to", 0.0], ["all", 0.0], ["kinds", 0.0], ["of", 0.0], ["music", 0.0], [".", 0.0], ["i", 0.0], ["love", 0.0], ["watching", 0.0], ["funny", 1.3957544565200806], ["movies", 1.0798187255859375], [".", 0.0]], [], []]}
-
 #persona: "i grew up homeschooled.i've a hard time feeling connected with people.i take my emotions out through art.i care deeply about animals.i sometimes need to scream to feel alive."
 #temperature: 0.6
 #top_k: 0
 #top_p: 0.9
+@app.route('/toto2',  methods=['POST'])
+def toto2():
+  req = request.get_json()
+  text = request.args.get('text')
+  print("INPUT=", text)
+  print(pformat(req))
+  personality = [tokenizer.encode(x) for x in req['persona']]
+  history = [tokenizer.encode(o) for o in req['context']]
+  if text is not None:
+    history.append(tokenizer.encode(text))
+  with torch.no_grad():
+    out_ids = sample_sequence(personality, history, tokenizer, model, args)
+  out_text = tokenizer.decode(out_ids, skip_special_tokens=True)
+  # TODO: attention output how?
+  print("OUT=", out_text)
+  return jsonify({"text": out_text})
+
 @app.route('/messages/toto',  methods=['POST'])
 def toto():
   req = request.get_json()
@@ -123,6 +141,10 @@ def shuffle():
   print(personality)
   print(slug)
   return jsonify({"slug": slug, 'text': personality})
+
+@app.route('/shuffle2')
+def shuffle2():
+  return jsonify({"persona": [tokenizer.decode(p) for p in select_personalities()]})
 
 @app.route('/')
 def index():
