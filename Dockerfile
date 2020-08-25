@@ -1,37 +1,25 @@
-FROM ubuntu:18.04
+ARG FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:20.03-py3
+FROM ${FROM_IMAGE_NAME}
 
-MAINTAINER Loreto Parisi loretoparisi@gmail.com
+ADD . /workspace
+WORKDIR /workspace
 
-########################################  BASE SYSTEM
-# set noninteractive installation
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y apt-utils
-RUN apt-get install -y --no-install-recommends \
-    build-essential \
-    pkg-config \
-    tzdata \
-    curl
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir uvicorn gunicorn fastapi
 
-######################################## PYTHON3
-RUN apt-get install -y \
-    python3 \
-    python3-pip
+RUN chmod +x /workspace/app/start.sh
+RUN chmod +x /workspace/app/start-reload.sh
 
-# set local timezone
-RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata
+ENV PYTHONPATH=/workspace/app
 
-# transfer-learning-conv-ai
-ENV PYTHONPATH /usr/local/lib/python3.6 
-COPY . ./
-COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+ENV PORT=8000
+EXPOSE 8000
 
 # model zoo
-RUN mkdir -p models && \
-    curl https://s3.amazonaws.com/models.huggingface.co/transfer-learning-chatbot/finetuned_chatbot_gpt.tar.gz > models/finetuned_chatbot_gpt.tar.gz && \
-    cd models/ && \
-    tar -xvzf finetuned_chatbot_gpt.tar.gz && \
-    rm finetuned_chatbot_gpt.tar.gz
-    
-CMD ["bash"]
+#RUN mkdir -p models && \
+#    curl https://s3.amazonaws.com/models.huggingface.co/transfer-learning-chatbot/finetuned_chatbot_gpt.tar.gz > models/finetuned_chatbot_gpt.tar.gz && \
+#    cd models/ && \
+#    tar -xvzf finetuned_chatbot_gpt.tar.gz && \
+#    rm finetuned_chatbot_gpt.tar.gz
+
+CMD ["/workspace/app/start.sh"]

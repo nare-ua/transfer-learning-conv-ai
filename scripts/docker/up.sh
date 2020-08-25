@@ -1,5 +1,25 @@
-docker run --rm -it \
+#!/bin/bash
+
+set -euxo pipefail
+
+OPTARGS=""
+if [[ $(hostname) == "nipa2020-0909" ]]; then
+  echo "running on $(hostname)"
+  OPTARGS="-e OPENBLAS_CORETYPE=nehalem"
+fi
+
+IMAGENAME="convai"
+ALIAS="convai"
+DATAROOT=/mnt/data
+TMPROOT=/mnt/tmp
+
+docker run --shm-size=1g -d --ulimit memlock=-1 --ulimit stack=67108864 \
+  --network=nlpdemo_default --network-alias="$ALIAS" \
+  --name="$ALIAS" \
+  --ipc=host \
+  -v $PWD:/workspace \
   -v /mnt/data/transformers_cache:/root/.cache \
-  -v /home/yuntai/git/transfer-learning-conv-ai:/workspace \
-  -p 5000:5000 \
-  convai bash
+  -v ${TMPROOT}:/mnt/tmp \
+  -v ${DATAROOT}:/mnt/data \
+  -p 8000 \
+  $OPTARGS "$IMAGENAME"
