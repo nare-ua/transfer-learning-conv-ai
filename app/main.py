@@ -68,26 +68,36 @@ personalities = [dialog["personality"] for dataset in dataset.values() for dialo
 def select_personalities():
   return random.choice(personalities)
 
+from pydantic import BaseModel
+from typing import Optional, List
+
+class Item(BaseModel):
+    persona: List[str]
+    context: List[str]
+    temperature: Optional[float] = 0.6
+    top_k: Optional[float] = 0
+    top_p: Optional[float] = 0.9
+
 #persona: "i grew up homeschooled.i've a hard time feeling connected with people.i take my emotions out through art.i care deeply about animals.i sometimes need to scream to feel alive."
 #temperature: 0.6
 #top_k: 0
 #top_p: 0.9
 @app.post('/toto')
-async def toto():
-    req = request.get_json()
-    text = request.args.get('text')
-    logging.info(pformat(req))
-    personality = [tokenizer.encode(x) for x in req['persona']]
-    history = [tokenizer.encode(o) for o in req['context']]
-    if text is not None and req['context'][-1] != text:
-        history.append(tokenizer.encode(text))
-    logging.info("history=", history)
+async def toto(item: Item, text: str):
+    logging.info(f"text: {text}")
+    logging.info(pformat(item))
+    personality = [tokenizer.encode(x) for x in item.persona]
+    if text is not None and item.context[-1] != text:
+        item.context.append(text)
 
+    history = [tokenizer.encode(o) for o in item.context]
     with torch.no_grad():
         out_ids = sample_sequence(personality, history, tokenizer, model, args)
 
-    out_text = tokenizer.decode(out_ids, skip_special_tokens=True)
-    return {"text": out_text}
+    res = tokenizer.decode(out_ids, skip_special_tokens=True)
+    logging.info(f"context={item.context}, res='{res}'")
+
+    return {"text": res}
 
 @app.get('/shuffle')
 async def shuffle():
