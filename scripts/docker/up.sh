@@ -13,7 +13,7 @@ ALIAS="convai"
 DATAROOT=/mnt/data
 TMPROOT=/mnt/tmp
 
-docker run --shm-size=1g -d --ulimit memlock=-1 --ulimit stack=67108864 \
+docker run --shm-size=1g -d --rm --ulimit memlock=-1 --ulimit stack=67108864 \
   --network=nlpdemo_default --network-alias="$ALIAS" \
   --name="$ALIAS" \
   --ipc=host \
