@@ -2,4 +2,5 @@
 pytorch-ignite
 transformers
 tensorboardX
+openai
 #tensorflow  # for tensorboardX
