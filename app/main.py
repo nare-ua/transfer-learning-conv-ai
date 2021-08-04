@@ -133,22 +133,12 @@ class DialogItem(BaseModel):
     history: List[str]
     context: str
 
-
 # read up predefined greeting list
-PREDEFINED_GREETINGS_OLD = {
-    'entrance': ["you come back again?", "fuck off", "you are not welcomed here", "what did you learn today?", "why did you come back"],
-    'kitchen': ["are you pigging out again?", "stop fuck eating", "we have no food"],
-    'morning': ["good morning", "i hoped you don't wake up", "sleep more"],
-    'evening': ["good evening", "how was your day", "you can't afford me. you dumb ass uncle fucker"],
-    #'goodnight': ["good night", "good sleep baby", "don't look at me you faggot"],
-    'goodnight': ["The U.S. is ready to engage in talks about North Korea’s nuclear program even as it maintains pressure on Kim Jong Un’s regime, the Washington Post reported, citing an interview with Vice President Mike Pence. "],
-    'default': ["How are you?", "how are you doing?", "you look so bored", "don't come near to me"]
-}
 PREDEFINED_GREETINGS = mapa
 DEFAULT_PREDEFINED_GREETINGS = ["How are you?", "how are you doing?", "you look so bored", "don't come near to me"]
 
-CHILDNAME = 'Julie'
-ALIANAME = 'ALIA'
+CHILDNAME = 'Jaewon'
+AILANAME = 'AILA'
 
 class DialogItem2(BaseModel):
     history: List[List[str]]
@@ -172,7 +162,7 @@ async def diag_new(item: DialogItem2):
         greeting_list = PREDEFINED_GREETINGS.get(item.context, DEFAULT_PREDEFINED_GREETINGS)
         ix = random.randint(0, len(greeting_list)-1)
         text = greeting_list[ix].format(name=CHILDNAME)
-        return {"history": [[ALIANAME, text]]}
+        return {"history": [[AILANAME, text]]}
 
     # encode the new user input, add the eos_token and return a tensor in Pytorch
     #new_user_input_ids = tokenizer.encode(text + tokenizer.eos_token, return_tensors='pt')
@@ -190,9 +180,17 @@ async def diag_new(item: DialogItem2):
         chat_history_ids = model.generate(chat_history_ids, max_length=100,top_k=50,do_sample=True, top_p=0.95)
         res = tokenizer.decode(chat_history_ids[:, end_ix:][0], skip_special_tokens=True)
     else:
+        #prompt = "The following is a conversation with a best pickup artist. He likes to say nasty stuffs and talk dirty. He usese the best pickup lines and can amaze any girls's crush to hit homerun easily!"
+        #prompt = "These are the top pickup lines of 2021! Amaze your crush and get results!\n"
+        prompt0 = f"""\
+The following is a conversation with an English teacher, {AILANAME} and an elementary school student, {CHILDNAME}. \
+{AILANAME} uses plain and simple languge that {CHILDNAME} can easily understand. \
+{AILANAME} is helpful, kind, creative but pendative as to teaching English."""
+
         prompt = "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n"
+
         prompt += ''.join(f'\n{o[0]}:{o[1]}' for o in item.history)
-        prompt += f'\n{ALIANAME}:'
+        prompt += f'\n{AILANAME}:'
         print("-------prompt----------------")
         print(prompt)
         print("-----------------------------")
@@ -203,16 +201,16 @@ async def diag_new(item: DialogItem2):
           temperature=0.9,
           max_tokens=150,
           top_p=1,
-          frequency_penalty=0.0,
-          presence_penalty=0.6,
-          stop=["\n", f" {CHILDNAME}:", f" {ALIANAME}:"]
+          frequency_penalty=0.9,
+          presence_penalty=0.9,
+          stop=["\n", f" {CHILDNAME}:", f" {AILANAME}:"]
         )
 
         res = res['choices'][0]['text']
 
     print(f"response({item.backend}): {res}")
 
-    new_history = item.history + [[ALIANAME, res]]
+    new_history = item.history + [[AILANAME, res]]
     print("new history=", new_history)
     return {"history": new_history, 'context': item.context}
 
@@ -237,9 +235,7 @@ async def toto2(item: DialogItem):
     # encode the new user input, add the eos_token and return a tensor in Pytorch
     #new_user_input_ids = tokenizer.encode(text + tokenizer.eos_token, return_tensors='pt')
 
-    chat_history_ids = [tokenizer.encode(o + tokenizer.eos_token,
-                                         return_tensors='pt') for o in
-                        item.history]
+    chat_history_ids = [tokenizer.encode(o + tokenizer.eos_token, return_tensors='pt') for o in item.history]
     #chat_history_ids += [new_user_input_ids]
 
     # append the new user input tokens to the chat history
