@@ -1,4 +1,5 @@
 import sys
+import os
 sys.path.insert(0, '..')
 
 import logging
@@ -18,11 +19,9 @@ from interact import sample_sequence
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-OPENAI_API_KEY="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"
-#
 import os
 import openai
-openai.api_key = OPENAI_API_KEY
+openai.api_key = os.environ["OPEN_API_KEY"]
 
 app = FastAPI()
 app.add_middleware(
