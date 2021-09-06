@@ -23,5 +23,5 @@ docker run --shm-size=1g -d --rm --ulimit memlock=-1 --ulimit stack=67108864 \
   -v /mnt/data/transformers_cache:/root/.cache \
   -v ${TMPROOT}:/mnt/tmp \
   -v ${DATAROOT}:/mnt/data \
-  -e OPENAI_API_KEY \
+  -e ${OPENAI_API_KEY} \
   $OPTARGS "$CONTAINER_NAME"
