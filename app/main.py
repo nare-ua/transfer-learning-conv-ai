@@ -4,21 +4,10 @@ sys.path.insert(0, '..')
 
 import logging
 import random
-from argparse import ArgumentParser
-from itertools import chain
-from pprint import pformat
-import warnings
-
-import torch
-
-from train import add_special_tokens_
-from utils import get_dataset, download_pretrained_model
-from interact import sample_sequence
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import os
 import openai
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
@@ -31,26 +20,9 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
 import csv
 import csv
 from collections import defaultdict
-
-parser = ArgumentParser()
-parser.add_argument("--dataset_path", type=str, default="", help="Path or url of the dataset. If empty download from S3.")
-parser.add_argument("--dataset_cache", type=str, default='./dataset_cache', help="Path or url of the dataset cache")
-parser.add_argument("--model", type=str, default="openai-gpt", help="Model type (openai-gpt or gpt2)", choices=['openai-gpt', 'gpt2'])  # anything besides gpt2 will load openai-gpt
-parser.add_argument("--model_checkpoint", type=str, default="", help="Path, url or short name of the model")
-parser.add_argument("--max_history", type=int, default=2, help="Number of previous utterances to keep in history")
-parser.add_argument("--device", type=str, default="cpu")
-parser.add_argument("--no_sample", action='store_true', help="Set to use greedy decoding instead of sampling")
-parser.add_argument("--max_length", type=int, default=20, help="Maximum length of the output utterances")
-parser.add_argument("--min_length", type=int, default=1, help="Minimum length of the output utterances")
-parser.add_argument("--seed", type=int, default=0, help="Seed")
-parser.add_argument("--temperature", type=int, default=0.7, help="Sampling softmax temperature")
-parser.add_argument("--top_k", type=int, default=30, help="Filter top-k tokens before sampling (<=0: no filtering)")
-parser.add_argument("--top_p", type=float, default=0.95, help="Nucleus filtering (top-p) before sampling (<=0.0: no filtering)")
-args = parser.parse_known_args()[0]
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__file__)
@@ -139,7 +111,7 @@ async def diag_new(item: DialogItem):
         ix = random.randint(0, len(greeting_list)-1)
         text = greeting_list[ix].format(name=CHILDNAME)
         return {"history": [[AINAME, text]]}
- 
+
     prompt = """\
 My name is {AINAME} and I am {CHILDNAME}'s friend. \
 
