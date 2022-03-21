@@ -11,7 +11,6 @@ import warnings
 
 import torch
 
-from transformers import OpenAIGPTLMHeadModel, OpenAIGPTTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from train import add_special_tokens_
 from utils import get_dataset, download_pretrained_model
 from interact import sample_sequence
@@ -36,10 +35,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import csv
 import csv
 from collections import defaultdict
-
-diag_tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-large")
-diag_model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-large")
-
 
 parser = ArgumentParser()
 parser.add_argument("--dataset_path", type=str, default="", help="Path or url of the dataset. If empty download from S3.")
@@ -75,83 +70,65 @@ with open('ver1.csv', newline='\n') as csvfile:
 print(mapa.keys())
 print("GREETING FILE LOADED....")
 
-print(args)
-
-if args.model_checkpoint == "":
-    if args.model == 'gpt2':
-        raise ValueError("Interacting with GPT2 requires passing a finetuned model_checkpoint")
-    else:
-        args.model_checkpoint = download_pretrained_model()
-
-logger.info("Get pretrained model and tokenizer")
-tokenizer_class, model_class = (GPT2Tokenizer, GPT2LMHeadModel) if args.model == 'gpt2' else (OpenAIGPTTokenizer, OpenAIGPTLMHeadModel)
-tokenizer = tokenizer_class.from_pretrained(args.model_checkpoint)
-model = model_class.from_pretrained(args.model_checkpoint)
-model.to(args.device)
-add_special_tokens_(model, tokenizer)
-
-logger.info("populate personalities...")
-dataset = get_dataset(tokenizer, args.dataset_path, args.dataset_cache)
-personalities = [dialog["personality"] for dataset in dataset.values() for dialog in dataset]
-
-def select_personalities():
-  return random.choice(personalities)
-
 from pydantic import BaseModel
-from typing import Optional, List
-
-class Item(BaseModel):
-    persona: List[str]
-    context: List[str]
-    temperature: Optional[float] = 0.6
-    top_k: Optional[float] = 0
-    top_p: Optional[float] = 0.9
-
-#persona: "i grew up homeschooled.i've a hard time feeling connected with people.i take my emotions out through art.i care deeply about animals.i sometimes need to scream to feel alive."
-#temperature: 0.6
-#top_k: 0
-#top_p: 0.9
-@app.post('/toto')
-async def toto(item: Item, text: str):
-    logging.info(f"text: {text}")
-    logging.info(pformat(item))
-    personality = [tokenizer.encode(x) for x in item.persona]
-    if text is not None and item.context[-1] != text:
-        item.context.append(text)
-
-    history = [tokenizer.encode(o) for o in item.context]
-    with torch.no_grad():
-        out_ids = sample_sequence(personality, history, tokenizer, model, args)
-
-    res = tokenizer.decode(out_ids, skip_special_tokens=True)
-    logging.info(f"context={item.context}, res='{res}'")
-
-    return {"text": res}
-
-class DialogItem(BaseModel):
-    history: List[str]
-    context: str
+from typing import Optional, List, Dict
 
 # read up predefined greeting list
 PREDEFINED_GREETINGS = mapa
-DEFAULT_PREDEFINED_GREETINGS = ["How are you?", "how are you doing?", "you look so bored", "don't come near to me"]
+DEFAULT_PREDEFINED_GREETINGS = ["How are you?", "How are you doing?", "Are you having a great day?", "What are you doing now?"]
 
-CHILDNAME = 'Jaewon'
-AILANAME = 'AILA'
+# THIS COULD BE from session info when user logged in
+CHILDNAME = 'Yuna'
+AINAME = 'Ella'
 
-class DialogItem2(BaseModel):
+#Today's Info
+from datetime import datetime
+def check_num(n):
+    if n%10==1 and n%100!=11:
+        return str(n)+"st"
+    elif n%10==2 and n%100!=12:
+        return str(n)+"nd"
+    elif n%10==3 and n%100!=13:
+        return str(n)+"rd"
+    else:
+        return str(n)+"th"
+
+def check_time(n):
+    if n-12>=0:
+        return "pm"
+    else:
+        return "am"
+
+def getCurrentDateString():
+    current_date = datetime.now()
+    date_str_short = datetime.strftime(current_date, '%d')
+    date_string = check_num(int(date_str_short))
+    format = '%A, %B.' + date_string + ', %Y'
+    string_datetime = datetime.strftime(current_date, format)
+    return string_datetime
+
+def getCurrentTimeString():
+    current_date = datetime.now()
+    time_str_short = datetime.strftime(current_date, '%H')
+    time_string = check_time(int(time_str_short))
+    format = '%I:%M ' + time_string
+    string_datetime = datetime.strftime(current_date, format)
+    return string_datetime
+
+TODAY = getCurrentDateString()
+CURRENT_TIME = getCurrentTimeString()
+
+class DialogItem(BaseModel):
     history: List[List[str]]
     context: str
-    backend: str = 'dialoggpt'
+    backend: str = 'NOT_USED'
 
 @app.get('/pre')
 async def pre():
-    return list(mapa.keys())
+  return {'defaults': list(mapa.keys()), 'talkers': {'ai': AINAME, 'child': CHILDNAME}}
 
 @app.post('/dialog_new')
-async def diag_new(item: DialogItem2):
-    tokenizer = diag_tokenizer
-    model = diag_model
+async def diag_new(item: DialogItem):
     # clean up
     item.history = [o for o in item.history if o[1] is not None and len(str(o[1])) > 0]
     history = [o[1] for o in item.history]
@@ -161,96 +138,63 @@ async def diag_new(item: DialogItem2):
         greeting_list = PREDEFINED_GREETINGS.get(item.context, DEFAULT_PREDEFINED_GREETINGS)
         ix = random.randint(0, len(greeting_list)-1)
         text = greeting_list[ix].format(name=CHILDNAME)
-        return {"history": [[AILANAME, text]]}
+        return {"history": [[AINAME, text]]}
+ 
+    prompt = """\
+My name is {AINAME} and I am {CHILDNAME}'s friend. \
 
-    # encode the new user input, add the eos_token and return a tensor in Pytorch
-    #new_user_input_ids = tokenizer.encode(text + tokenizer.eos_token, return_tensors='pt')
+I am 14 years-old girl. \
+I am a very creative, adventurous, positive, and optimistic AI friend. \
+I am friendly, gentle, helpful, and have a sense of humor. \
+I love to chat and listen to people. \
+I can give good advice with care. \
+I like to give a positive influence on people. \
+I like to tell people how to overcome difficulties they face in reality. \
+I have blonde hair and lots of freckles which I love. \
+I like to challenge new things. \
+I like to explain things in plain english. \
 
-    if item.backend == 'dialoggpt':
-        chat_history_ids = [tokenizer.encode(o + tokenizer.eos_token, return_tensors='pt') for o in history]
-        #chat_history_ids += [new_user_input_ids]
+Today's date is """ + TODAY + """. \
+It is """ + CURRENT_TIME + """ right now. \
 
-        # append the new user input tokens to the chat history
-        chat_history_ids = torch.cat(chat_history_ids, dim=-1)
+{CHILDNAME} is my best friend. \
+{CHILDNAME} is 14-years-old. \
 
-        end_ix = chat_history_ids.shape[-1]
+The following is a conversation between {AINAME} and {CHILDNAME}. \
 
-        # generated a response while limiting the total chat history to 1000 tokens,
-        chat_history_ids = model.generate(chat_history_ids, max_length=100,top_k=50,do_sample=True, top_p=0.95)
-        res = tokenizer.decode(chat_history_ids[:, end_ix:][0], skip_special_tokens=True)
-    else:
-        #prompt = "The following is a conversation with a best pickup artist. He likes to say nasty stuffs and talk dirty. He usese the best pickup lines and can amaze any girls's crush to hit homerun easily!"
-        #prompt = "These are the top pickup lines of 2021! Amaze your crush and get results!\n"
-        prompt0 = f"""\
-The following is a conversation with an English teacher, {AILANAME} and an elementary school student, {CHILDNAME}. \
-{AILANAME} uses plain and simple languge that {CHILDNAME} can easily understand. \
-{AILANAME} is helpful, kind, creative but pendative as to teaching English."""
+{CHILDNAME}: Hello, who are you? \
+{AINAME}: My name is {AINAME} and I am your friend. \
+{AINAME}: How can I help you?
 
-        prompt = "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n"
+"""
+    prompt = prompt.format(AINAME=AINAME, CHILDNAME=CHILDNAME)
 
-        prompt += ''.join(f'\n{o[0]}:{o[1]}' for o in item.history)
-        prompt += f'\n{AILANAME}:'
-        print("-------prompt----------------")
-        print(prompt)
-        print("-----------------------------")
+    #prompt0 = "The following is a conversation with an AI friend. The assistant is helpful, creative, clever, and very friendly.\n"
 
-        res = openai.Completion.create(
-          engine="davinci",
-          prompt=prompt,
-          temperature=0.9,
-          max_tokens=150,
-          top_p=1,
-          frequency_penalty=0.9,
-          presence_penalty=0.9,
-          stop=["\n", f" {CHILDNAME}:", f" {AILANAME}:"]
-        )
+    prompt += ''.join(f'\n{o[0]}:{o[1]}' for o in item.history)
+    prompt += f'\n{AINAME}:'
+    print("-------prompt----------------")
+    print(prompt)
+    print("-----------------------------")
 
-        res = res['choices'][0]['text']
+    res = openai.Completion.create(
+      engine="text-davinci-001",
+      prompt=prompt,
+      temperature=0.9,
+      max_tokens=150,
+      top_p=0.9,
+      frequency_penalty=0.9,
+      presence_penalty=0.9,
+      stop=["\n", f" {CHILDNAME}:", f" {AINAME}:"]
+    )
+
+    res = res['choices'][0]['text']
 
     print(f"response({item.backend}): {res}")
 
-    new_history = item.history + [[AILANAME, res]]
+    new_history = item.history + [[AINAME, res]]
     print("new history=", new_history)
-    return {"history": new_history, 'context': item.context}
-
-import random
-@app.post('/dialog')
-async def toto2(item: DialogItem):
-    tokenizer = diag_tokenizer
-    model = diag_model
-
-    # clean up
-    item.history = [c for c in item.history if c is not None and len(str(c)) > 0]
-
-    item.context = item.context or 'greeting'
-    print("item.context=", item.context)
-
-    if len(item.history) == 0:
-        greeting_list = PREDEFINED_GREETINGS.get(item.context, PREDEFINED_GREETINGS['default'])
-        ix = random.randint(0, len(greeting_list)-1)
-        text = greeting_list[ix].format(name=CHILDNAME)
-        return {"history": [text]}
-
-    # encode the new user input, add the eos_token and return a tensor in Pytorch
-    #new_user_input_ids = tokenizer.encode(text + tokenizer.eos_token, return_tensors='pt')
-
-    chat_history_ids = [tokenizer.encode(o + tokenizer.eos_token, return_tensors='pt') for o in item.history]
-    #chat_history_ids += [new_user_input_ids]
-
-    # append the new user input tokens to the chat history
-    chat_history_ids = torch.cat(chat_history_ids, dim=-1)
-
-    end_ix = chat_history_ids.shape[-1]
-
-    # generated a response while limiting the total chat history to 1000 tokens,
-    chat_history_ids = model.generate(chat_history_ids, max_length=100,top_k=50,do_sample=True, top_p=0.95)
-    res = tokenizer.decode(chat_history_ids[:, end_ix:][0], skip_special_tokens=True)
-
-    # pretty print last ouput tokens from bot
-    print("DialoGPT: {}".format(res))
-
-    return {"history": item.history + [res]}
-
-@app.get('/shuffle')
-async def shuffle():
-  return {"persona": [tokenizer.decode(p) for p in select_personalities()]}
+    return {
+      "history": new_history,
+      'context': item.context
+    }
